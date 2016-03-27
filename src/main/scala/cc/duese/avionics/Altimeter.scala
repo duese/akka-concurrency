@@ -7,12 +7,13 @@ import scala.concurrent.duration._
 
 object Altimeter {
   case class RateChange(amount: Float)
+  case class AltitudeUpdate(altitude: Double)
 }
 
 /**
   * class as of pages 83 and 84
   */
-class Altimeter extends Actor with ActorLogging {
+class Altimeter extends Actor with ActorLogging with EventSource {
   import Altimeter._
 
   // execution context needed for scheduler
@@ -41,7 +42,7 @@ class Altimeter extends Actor with ActorLogging {
   // an internal message we send to ourselves to tell us to update our altitude
   case object Tick
 
-  override def receive: Receive = {
+  def altimeterReceive: Receive = {
     // our climb rate has changed
     case RateChange(amount) =>
       // truncate the range of 'amount' to [-1, 1] before multiplying
@@ -53,7 +54,10 @@ class Altimeter extends Actor with ActorLogging {
       val tick = System.currentTimeMillis
       altitude += ((tick - lastTick) / 60000.0) * rateOfClimb
       lastTick = tick
+      sendEvent(AltitudeUpdate(altitude))
   }
+
+  override def receive: Receive = eventSourceReceive orElse altimeterReceive
 
   // kill ticker when we stop
   override def postStop(): Unit = ticker.cancel
