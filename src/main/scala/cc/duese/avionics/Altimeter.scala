@@ -8,12 +8,13 @@ import scala.concurrent.duration._
 object Altimeter {
   case class RateChange(amount: Float)
   case class AltitudeUpdate(altitude: Double)
+
+  def apply(): Altimeter = new Altimeter with ProductionEventSource
 }
 
-/**
-  * class as of pages 83 and 84
-  */
-class Altimeter extends Actor with ActorLogging with EventSource {
+class Altimeter extends Actor with ActorLogging {
+  this: EventSource =>
+
   import Altimeter._
 
   // execution context needed for scheduler
